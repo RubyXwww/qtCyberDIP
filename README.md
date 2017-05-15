@@ -1,4 +1,12 @@
 # qtCyberDIP
+Auto Tetris Player based on CyberDIP
+基于CybeDIP的自主俄罗斯方块程序
+
+2018届IEEE班数字图像处理基础课程大作业——C03组
+
+* [Template URL](https://github.com/LostXine/qtCyberDIP)
+
+***
 ![CyberDIP](/pic/CyberDIP.png)
 
 CyberDIP driver for windows in C++ 11.
