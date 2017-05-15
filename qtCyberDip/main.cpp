@@ -2,6 +2,8 @@
 #include <QtWidgets/QApplication>
 #include <gameState.h>
 #include <random>
+#include <chrono>
+
 int main(int argc, char *argv[])
 {
 	random_device r;
@@ -23,8 +25,9 @@ int main(int argc, char *argv[])
 	cout << "First Block Type: ";
 	cin >> type;*/
 	type = uniform_dist(el);
-	int del_row = 0;
+	int del_row = 0, step = 0;
 	char next;
+	chrono::steady_clock::time_point start = chrono::steady_clock::now();
 	while (!state.isGameOver()) {
 		/*
 		cout << "Next Block Type: ";
@@ -34,6 +37,7 @@ int main(int argc, char *argv[])
 		nb = block_vector[ntype % 7];
 		dl = state.getBestDropLoc(b,nb);
 		del_row += dl.del_row;
+		step++;
 		cout << "Best Location: " << dl.loc << '\t' << "Best Rotation:" << dl.rotation << "\t\t" << "Total Deleted Row: " << del_row << endl;
 		for (int i = 0; i < dl.rotation; i++) b.rotate();
 		state.drop(b, dl.loc);
@@ -43,7 +47,11 @@ int main(int argc, char *argv[])
 		//cout << "Next Step?";
 		//cin >> next;
 	}
-
+	chrono::steady_clock::time_point end = chrono::steady_clock::now();
+	cout << "Total Steps: " << step << endl;
+	cout << "Total Deleted Row: " << del_row << endl;
+	cout << "Total Times: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
+	
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();

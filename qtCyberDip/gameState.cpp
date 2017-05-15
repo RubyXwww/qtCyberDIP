@@ -111,7 +111,8 @@ double gameState::getReward(int del_row_cur, int del_row_next) {
 	//holes = count(count_edges.cbegin(), count_edges.cend(), 4);
 	holes = total_height - blockNum;
 	double val = (200 - total_height * pow(1.1,holes));
-	return sigmoid(val) + 10 / edges + pow(1.5, del_row_cur) + pow(1.2, del_row_next);
+	double hval = 10 * (20 - highest_height * pow(1.1, holes));
+	return sigmoid(val) + sigmoid(hval) + 10 / edges + pow(1.5, del_row_cur) + pow(1.2, del_row_next);
 }
 
 bool gameState::isGameOver() {
