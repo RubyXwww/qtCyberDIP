@@ -6,6 +6,7 @@
 
 int main(int argc, char *argv[])
 {
+	/*
 	random_device r;
 	default_random_engine el(r());
 	uniform_int_distribution<int> uniform_dist(0, 6);
@@ -21,17 +22,11 @@ int main(int argc, char *argv[])
 	state.show();
 	int type, ntype;
 	DropLoc dl;
-	/*
-	cout << "First Block Type: ";
-	cin >> type;*/
 	type = uniform_dist(el);
 	int del_row = 0, step = 0;
 	char next;
 	chrono::steady_clock::time_point start = chrono::steady_clock::now();
 	while (!state.isGameOver()) {
-		/*
-		cout << "Next Block Type: ";
-		cin >> ntype;*/
 		ntype = uniform_dist(el);
 		b = block_vector[type % 7];
 		nb = block_vector[ntype % 7];
@@ -51,7 +46,7 @@ int main(int argc, char *argv[])
 	cout << "Total Steps: " << step << endl;
 	cout << "Total Deleted Row: " << del_row << endl;
 	cout << "Total Times: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
-	
+	*/
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();

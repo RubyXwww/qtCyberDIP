@@ -1,5 +1,6 @@
 #include "usrGameController.h"
-
+#include <time.h>
+#include <sstream>
 #ifdef VIA_OPENCV
 //构造与初始化
 usrGameController::usrGameController(void* qtCD)
@@ -24,6 +25,14 @@ usrGameController::~usrGameController()
 //处理图像 
 int usrGameController::usrProcessImage(cv::Mat& img)
 {
+	struct tm *p;
+	time_t current_time;
+	time(&current_time);
+	p = localtime(&current_time);
+	stringstream ss;
+	ss << (p->tm_year + 1900) << (p->tm_mon + 1) << p->tm_mday << p->tm_hour << p->tm_min << p->tm_sec;
+	string name;
+	name = ss.str();
 	cv::Size imgSize(img.cols, img.rows - UP_CUT);
 	if (imgSize.height <= 0 || imgSize.width <= 0)
 	{
@@ -40,12 +49,14 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		argM.box.y >= 0 && argM.box.y < imgSize.height
 		)
 	{
+		
 		qDebug() << "X:" << argM.box.x << " Y:" << argM.box.y;
 		if (argM.Hit)
 		{
 			device->comHitDown();
 		}
 		device->comMoveToScale(((double)argM.box.y + argM.box.height) / pt.rows , 1 - ((double)argM.box.x + argM.box.width) / pt.cols);
+		cv::imwrite(("../images/"+name + ".jpg").c_str(), img);
 		argM.box.x = -1; argM.box.y = -1;
 		if (argM.Hit)
 		{
