@@ -79,7 +79,8 @@ double gameState::getReward(int del_row_cur, int del_row_next) {
 	double total_height = accumulate(heights.cbegin(),heights.cend(),0);
 	double avg_height = total_height / heights.size();
 	double holes;
-	double edges;
+	double diff = 0;
+	int edges;
 	bool flag;
 	int blockNum = 0;
 	for (int i = 19; i >= 0; i--) {
@@ -107,12 +108,16 @@ double gameState::getReward(int del_row_cur, int del_row_next) {
 	for (int i = 0; i < 10; i++) {
 		//count_edges[190 + i]++;
 		if (grid[19][i] == 0) edges++;
+		if (i != 9) diff += abs(heights[i] - heights[i + 1]);
 	}
 	//holes = count(count_edges.cbegin(), count_edges.cend(), 4);
 	holes = total_height - blockNum;
-	double val = (200 - total_height * pow(1.1,holes));
-	double hval = 10 * (20 - highest_height * pow(1.1, holes));
-	return sigmoid(val) + sigmoid(hval) + 10 / edges + pow(1.5, del_row_cur) + pow(1.2, del_row_next);
+	double val = (200 - total_height * pow(1.1,holes))/200;
+	double hval = (20 - highest_height * pow(1.1, holes))/20;
+	double avg = (200 - total_height) / 10;
+	double highest = (20 - highest_height);
+	return sigmoid(val) + sigmoid(hval) + 10 / double(edges) + pow(1.5, del_row_cur) + pow(1.25, del_row_next);
+	//return sigmoid(highest * 19 + avg * 15 + del_row_cur * 2 + del_row_next * 1 - holes * 7 - edges * 4 - diff);
 }
 
 bool gameState::isGameOver() {

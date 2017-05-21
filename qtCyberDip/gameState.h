@@ -1,7 +1,6 @@
 #pragma once
 #include "gameBlock.h"
 #include <vector>
-using namespace std;
 
 struct DropLoc {
 	int loc;

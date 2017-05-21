@@ -12,6 +12,7 @@ class usrGameController
 {
 private:
 	deviceCyberDip* device;
+	vector<vector<double>> blockFeatures;
 //以下是为了实现演示效果，增加的内容
 	//鼠标回调结构体
 	struct MouseArgs{
@@ -27,12 +28,15 @@ private:
 	friend void  mouseCallback(int event, int x, int y, int flags, void*param);
 	MouseArgs argM;
 //以上是为了实现课堂演示效果，增加的内容
+	vector<double> getFeature(cv::Mat& img);
+	
 public:
 	//构造函数，所有变量的初始化都应在此完成
 	usrGameController(void* qtCD);
 	//析构函数，回收本类所有资源
 	~usrGameController();
 	//处理图像函数，每次收到图像时都会调用
+	BlockType getBlockType(cv::Mat& img);
 	int usrProcessImage(cv::Mat& img);
 };
 

@@ -7,6 +7,14 @@
 int main(int argc, char *argv[])
 {
 	/*
+	for (int i = 0; i < 7; i++) {
+		stringstream ss;
+		ss << i;
+		cv::Mat img = cv::imread(("../images/blocklabel/"+ss.str()+".jpg").c_str());
+		cv::Mat roi_img = img(cv::Rect(370, 30, 95, 75));
+		cv::imwrite(("../images/blocklabel/" + ss.str() + "_.jpg").c_str(), roi_img);
+	}*/
+	
 	random_device r;
 	default_random_engine el(r());
 	uniform_int_distribution<int> uniform_dist(0, 6);
@@ -46,7 +54,7 @@ int main(int argc, char *argv[])
 	cout << "Total Steps: " << step << endl;
 	cout << "Total Deleted Row: " << del_row << endl;
 	cout << "Total Times: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
-	*/
+	
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();
