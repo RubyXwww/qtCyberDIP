@@ -11,8 +11,27 @@
 class usrGameController
 {
 private:
+	enum BackgroundInformation {
+		UP, DOWN, LEFT, RIGHT, WIDTH, HEIGHT
+	};
+	enum RecursiveState {
+		MENU,
+		INITIAL,
+		NEXTBLOCK,
+		FINDLOC,
+		JUDGELOC,
+		DROP
+	};
+	RecursiveState currentRecursiveState;
 	deviceCyberDip* device;
 	vector<vector<double>> blockFeatures;
+	vector<int> background;
+	vector<int> next_background;
+	vector<int> buttons;
+	gameBlock currentBlock;
+	gameBlock nextBlock;
+	bool isFirstBlock;
+	
 //以下是为了实现演示效果，增加的内容
 	//鼠标回调结构体
 	struct MouseArgs{
@@ -29,6 +48,10 @@ private:
 	MouseArgs argM;
 //以上是为了实现课堂演示效果，增加的内容
 	vector<double> getFeature(cv::Mat& img);
+	void initialLocation(cv::Mat& img);
+	/*for test*/
+	void showDetection(cv::Mat& img);
+	/*end for test*/
 	
 public:
 	//构造函数，所有变量的初始化都应在此完成
