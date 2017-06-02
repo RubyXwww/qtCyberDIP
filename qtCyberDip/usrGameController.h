@@ -5,12 +5,21 @@
 
 #include "qtcyberdip.h"
 #include "gameState.h"
+#include <map>
+#include <chrono>
 #define WIN_NAME "Frame"
 
 //游戏控制类
 class usrGameController
 {
 private:
+	struct Tmp {
+		BlockType t;
+		int r;
+		int loc;
+		Tmp(BlockType tp=SLIDE, int rr = 0, int x=0):t(tp),r(rr),loc(x){}
+	};
+
 	enum BackgroundInformation {
 		UP, DOWN, LEFT, RIGHT, WIDTH, HEIGHT
 	};
@@ -22,15 +31,29 @@ private:
 		JUDGELOC,
 		DROP
 	};
+	enum ButtonType {
+		STARTB,
+		LEFTB,
+		RIGHTB,
+		ROTATEB,
+		DROPB
+	};
 	RecursiveState currentRecursiveState;
 	deviceCyberDip* device;
+	vector<double> menuFeature;
 	vector<vector<double>> blockFeatures;
 	vector<int> background;
 	vector<int> next_background;
 	vector<int> buttons;
+	vector<int> start_button;
+	map<int, Tmp> blockMap;
+	int pt_cols, pt_rows;
 	gameBlock currentBlock;
 	gameBlock nextBlock;
+	gameState currentState;
+	DropLoc currentBestLoc;
 	bool isFirstBlock;
+	chrono::steady_clock::time_point lastOp = chrono::steady_clock::now();
 	
 //以下是为了实现演示效果，增加的内容
 	//鼠标回调结构体
@@ -48,7 +71,12 @@ private:
 	MouseArgs argM;
 //以上是为了实现课堂演示效果，增加的内容
 	vector<double> getFeature(cv::Mat& img);
+	void getStartButton(cv::Mat& img);
+	bool isMenu(cv::Mat& img);
 	void initialLocation(cv::Mat& img);
+	void click(ButtonType bt, bool moveOnly = false);
+	vector<vector<int>> readFromImg(cv::Mat& img, bool isFirst = false);
+	Tmp readBlockFromMatrix(vector<vector<int>> grid, bool isFirst = false);
 	/*for test*/
 	void showDetection(cv::Mat& img);
 	/*end for test*/
@@ -58,8 +86,8 @@ public:
 	usrGameController(void* qtCD);
 	//析构函数，回收本类所有资源
 	~usrGameController();
-	//处理图像函数，每次收到图像时都会调用
 	BlockType getBlockType(cv::Mat& img);
+	
 	int usrProcessImage(cv::Mat& img);
 };
 

@@ -185,34 +185,25 @@ void gameBlock::rotate() {
 }
 /*for test*/
 void gameBlock::show() {
-	cout << "Block type:" << endl;
+	qDebug() << "Block type:";
 	for (int j = 0; j < 4; j++) {
-		for (int k = 0; k < 4; k++) {
-			cout << shapes[current][j][k];
-			if (k != 3) cout << ' ';
-			else cout << '\n';
-		}
+		qDebug() << shapes[current][j][0] << shapes[current][j][1] << shapes[current][j][2] << shapes[current][j][3];
 	}
 }
 
 void gameBlock::showAll() {
 	for (int i = 0; i < rotations; i++) {
-		cout << "Block type:" << endl;
+		qDebug() << "Block type:" << i;
 		vector<vector<int>> tmp = shapes[i];
 		for (int j = 0; j < 4; j++) {
-			for (int k = 0; k < 4; k++) {
-				cout << tmp[j][k];
-				if (k != 3) cout << ' ';
-				else cout << '\n';
-			}
+			qDebug() << shapes[i][j][0] << shapes[i][j][1] << shapes[i][j][2] << shapes[i][j][3];
 		}
-		cout << "bottom loc:" << endl;
-		for (int h : bottom_locs[i]) cout << h << ' ';
-		cout << endl;
-		cout << "Height: " << hw_pairs[i].height << endl;
-		cout << "Width: " << hw_pairs[i].width << endl;
+		qDebug() << "bottom loc:";
+		for (int h : bottom_locs[i]) qDebug() << h;
+		qDebug() << "Height: " << hw_pairs[i].height;
+		qDebug() << "Width: " << hw_pairs[i].width;
 
-		cout << '\n';
+		//cout << '\n';
 	}
 }
 /*end for test*/
