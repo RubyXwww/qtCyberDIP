@@ -17,7 +17,8 @@ private:
 		BlockType t;
 		int r;
 		int loc;
-		Tmp(BlockType tp=SLIDE, int rr = 0, int x=0):t(tp),r(rr),loc(x){}
+		bool clear;
+		Tmp(BlockType tp=SLIDE, int rr = 0, int x=0, bool c=false):t(tp),r(rr),loc(x),clear(c) {}
 	};
 
 	enum BackgroundInformation {
@@ -26,9 +27,13 @@ private:
 	enum RecursiveState {
 		MENU,
 		INITIAL,
+		NEWCYCLE,
 		NEXTBLOCK,
+		DELAY,
+		REFRESH,
 		FINDLOC,
 		JUDGELOC,
+		CHECK,
 		DROP
 	};
 	enum ButtonType {
@@ -53,6 +58,13 @@ private:
 	gameState currentState;
 	DropLoc currentBestLoc;
 	bool isFirstBlock;
+	bool jump_flag;
+	//bool doubleDetection;
+	bool waitUp;
+	int delay_count;
+	int fail_count;
+	int check_count;
+	int Op_delay;
 	chrono::steady_clock::time_point lastOp = chrono::steady_clock::now();
 	
 //以下是为了实现演示效果，增加的内容
@@ -75,10 +87,14 @@ private:
 	bool isMenu(cv::Mat& img);
 	void initialLocation(cv::Mat& img);
 	void click(ButtonType bt, bool moveOnly = false);
+	BlockType getBlockType(cv::Mat& img);
 	vector<vector<int>> readFromImg(cv::Mat& img, bool isFirst = false);
 	Tmp readBlockFromMatrix(vector<vector<int>> grid, bool isFirst = false);
 	/*for test*/
 	void showDetection(cv::Mat& img);
+	void combineAndshow(cv::Mat& img, cv::Mat& main_area);
+	void showState(cv::Mat& img);
+	void savePicture(cv::Mat& img);
 	/*end for test*/
 	
 public:
@@ -86,7 +102,6 @@ public:
 	usrGameController(void* qtCD);
 	//析构函数，回收本类所有资源
 	~usrGameController();
-	BlockType getBlockType(cv::Mat& img);
 	
 	int usrProcessImage(cv::Mat& img);
 };

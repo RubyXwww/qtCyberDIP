@@ -37,13 +37,21 @@ void gameState::refresh(vector<vector<int>> new_grid) {
 	if (size == 0) return;
 	if (new_grid[0].size() != 10) return;
 	int count;
-	for (int i = 19; i >= max(0, 20 - size); i--) {
-		count = 0;
-		for (int j = 0; j < 10; j++) {
-			count += new_grid[size - 20 + i][j];
-			grid[i][j] = new_grid[size - 20 + i][j];
+	bool flag = false;
+	for (int i = 19; i > max(0, 20 - size); i--) {
+		if (!flag) {
+			count = 0;
+			for (int j = 0; j < 10; j++) {
+				count += new_grid[size - 20 + i][j];
+				grid[i][j] = new_grid[size - 20 + i][j];
+			}
+			if (count == 0) flag = true;
 		}
-		if (count == 0) return;
+		else {
+			for (int j = 0; j < 10; j++) {
+				grid[i][j] = 0;
+			}
+		}
 	}
 	refreshHeights();
 }

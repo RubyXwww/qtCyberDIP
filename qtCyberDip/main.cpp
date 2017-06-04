@@ -5,39 +5,23 @@
 #include <chrono>
 
 using namespace cv;
-/*
-struct ss {
-	int i; float a;
-};
 enum BackgroundInformation {
 	UP, DOWN, LEFT, RIGHT, WIDTH, HEIGHT
 };
-bool mcomp(const ss &a, const ss &b)
+vector<int> background(6,0);
+vector<int> next_background(6,0);
+vector<int> buttons(4,0);
+gameState currentState;
+struct css {
+	int i; float a;
+};
+
+bool ccomp(const css &a, const css &b)
 {
 	return a.a>b.a;
 }
-vector<int> background(6,0);
-Mat img; Mat src_gray; Mat src;
-void initial();
 
-int main(int argc, char *argv[])
-{
-	img = imread("../images/20175161107.jpg");
-	int thresh = 150;
-	Mat canny_output, channel[3];
-	vector<Mat> contours(200);
-	split(img, channel);
-	Canny(channel[1], canny_output, thresh, thresh * 2, 3);
-	qDebug() << 1;
-	/// Ñ°ÕÒÂÖÀª
-	findContours(canny_output, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
-	imshow("canny", canny_output);
-	waitKey(0);
-	return 0;
-}
-
-void initial()
-{
+void initialLocation(cv::Mat& img) {
 	int thresh = 100;
 	Mat canny_output, img_gray;
 	vector<Mat> contours(300);
@@ -51,18 +35,18 @@ void initial()
 	findContours(canny_output, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
 	int len = contours.size();
-	vector<ss> sss(len);
+	vector<css> sss(len);
 	vector<Moments> mu(len);
 	for (int i = 0; i < len; i++)
 	{
 		mu[i] = moments(contours[i], false);
-		ss tmp;
+		css tmp;
 		tmp.a = contourArea(contours[i]);
 		tmp.i = i;
 		sss.push_back(tmp);
 	}
 
-	sort(sss.begin(), sss.end(), mcomp);
+	sort(sss.begin(), sss.end(), ccomp);
 
 	///  ¼ÆËãÖÐÐÄ¾Ø:
 	vector<Point2f> mc(len);
@@ -89,55 +73,86 @@ void initial()
 	background[RIGHT] -= 3; background[DOWN] -= 3;
 	background[WIDTH] = background[RIGHT] - background[LEFT];
 	background[HEIGHT] = background[DOWN] - background[UP];
+}
 
+vector<vector<int>> readFromImg(cv::Mat& img, bool isFirst) {
+	int erosion_size;
+	vector<vector<int>> result(20, vector<int>(10, 0));
+	if (isFirst) {
+		//qDebug() << "Find first block";
+		Mat dst, resize_dst;
+		threshold(img, dst, 100, 255, 0);
+		resize(dst, resize_dst, Size(10, 20));
+		threshold(resize_dst, resize_dst, 200, 255, 0);
 
-	rectangle(img, Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]), Scalar(0), 2, 8, 0);
-	namedWindow("Detection", CV_WINDOW_AUTOSIZE);
-	imshow("Detection", img);
+		for (int i = 0; i < 20; i++) {
+			for (int j = 0; j < 10; j++) {
+				if ((int)resize_dst.at<uchar>(i, j) == 255) result[i][j] = 1;
+			}
+		}
+	}
+	else {
+		int erosion_size = 9;
+		Mat element = getStructuringElement(MORPH_RECT, Size(2 * erosion_size + 1, 2 * erosion_size + 1), Point(erosion_size, erosion_size));
+		Mat erosion_img, resize_dst, dst;
+		erode(img, erosion_img, element);
+		dst = img - erosion_img;
+		threshold(dst, dst, 45, 255, 0);
+		resize(dst, resize_dst, Size(10, 20));
+		threshold(resize_dst, resize_dst, 215, 255, 0);
+		resize(resize_dst, img, Size(img.cols, img.rows), 0, 0, INTER_NEAREST);
+		//imshow("resize", resize_dst);
+		for (int i = 0; i < 20; i++) {
+			for (int j = 0; j < 10; j++) {
+				if ((int)resize_dst.at<uchar>(i, j) == 255) result[i][j] = 1;
+			}
+		}
+	}
+	return result;
+
 }
 
 
-
-void getChecks(Mat ros) {
-	int width = ros.size().width;
-	int height = ros.size().height;
-
-	qDebug() << width << "  " << height;
-
-	int check_x = width / 10;
-	int check_y = height / 20;
-
-	int checks[20][10];
-	Point coor[20][10];
-	coor[0][0].x = check_x / 2 + 5;
-	coor[0][0].y = check_y / 2 + 5;
-
-	for (int j = 1; j < 20; ++j) {
-		coor[j][0].x = coor[j - 1][0].x;
-		coor[j][0].y = coor[j - 1][0].y + check_y;
+void combineAndshow(cv::Mat& pt, cv::Mat& main_area) {
+	Mat dst,img;
+	pt.copyTo(img);
+	int col = main_area.cols;
+	int row = main_area.rows;
+	for (int i = 1; i < 10; i++) {
+		line(main_area, Point(i*col / 10, 0), Point(i*col / 10, row - 1), Scalar(255), 1, 8, 0);
 	}
-
-	for (int j = 0; j < 20; ++j) {
-		for (int i = 1; i < 10; ++i) {
-			coor[j][i].x = coor[j][i - 1].x + check_x;
-			coor[j][i].y = coor[j][i - 1].y;
-		}
+	for (int i = 1; i < 20; i++) {
+		line(main_area, Point(0, i*row / 20), Point(col - 1, i*row / 20), Scalar(255), 1, 8, 0);
 	}
-
-	for (int j = 0; j < 20; ++j) {
-		for (int i = 0; i < 10; ++i) {
-			checks[j][i] = (int)ros.at<uchar>(coor[j][i].y, coor[j][i].x);
-			circle(ros, Point(coor[j][i].x, coor[j][i].y), 5, Scalar(0), 2, 8, 0);
-			cout << checks[j][i] << "\t";
-			//cout << coor[j][i].x << "," << coor[j][i].y << "\t";
-		}
-		cout << endl;
-	}
+	cvtColor(main_area, dst, CV_GRAY2RGB);
+	dst.copyTo(img(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])));
+	namedWindow("Detected", CV_WINDOW_AUTOSIZE);
+	imshow("Detected", img);
 }
 
-
-
-*/
+void showState(cv::Mat& pt) {
+	Mat state_img(Size(10, 20), CV_8UC1, Scalar(0)), img, dst;
+	pt.copyTo(img);
+	int col = background[WIDTH];
+	int row = background[HEIGHT];
+	//imshow("a", state_img);
+	for (int i = 0; i < 20; i++) for (int j = 0; j < 10; j++) {
+		if (currentState.getState(i, j) == 1) {
+			state_img.at<uchar>(i, j) = 255;
+		}
+	}
+	resize(state_img, state_img, Size(col, row), 0, 0, INTER_NEAREST);
+	for (int i = 1; i < 10; i++) {
+		line(state_img, Point(i*col / 10, 0), Point(i*col / 10, row - 1), Scalar(255), 1, 8, 0);
+	}
+	for (int i = 1; i < 20; i++) {
+		line(state_img, Point(0, i*row / 20), Point(col - 1, i*row / 20), Scalar(255), 1, 8, 0);
+	}
+	cvtColor(state_img, dst, CV_GRAY2RGB);
+	dst.copyTo(img(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])));
+	namedWindow("State", CV_WINDOW_AUTOSIZE);
+	imshow("State", img);
+}
 
 int main(int argc, char *argv[])
 {
@@ -186,11 +201,33 @@ int main(int argc, char *argv[])
 	qDebug() << "Total Deleted Row: " << total_del_row << endl;
 	qDebug() << "Total Times: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
 	
+	return 0;
+
+	Mat pt = imread("../images/blocklabel/0.jpg");
+	Mat main_area;
+	vector<vector<int>> grid;
+	namedWindow("Origin", CV_WINDOW_AUTOSIZE);
+	//imshow("Origin", pt);
+	initialLocation(pt);
+	stringstream ss;
+	for (int i = 0; i < 8; i++) {
+		ss.str("");
+		ss << i;
+		pt = imread("../images/blocklabel/"+ss.str()+".jpg");
+		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
+		grid = readFromImg(main_area, false);
+		currentState.refresh(grid);
+		combineAndshow(pt, main_area);
+		showState(pt);
+		imshow("Origin", pt);
+		waitKey(0);
+	}
+
 	return 0;*/
 	
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();
-	
+
 	return a.exec();
 }

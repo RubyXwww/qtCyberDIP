@@ -769,14 +769,22 @@ void qtCyberDip::comHitOnce()
 	//用不存在的Z轴实现延时功能
 	if (comFetch)
 	{
-		comRequestToSend("G1 Z-0.01 F5.");
+		comRequestToSend("G1 Z-0.005 F5.");
 	}
 	else
 	{
-		comRequestToSend("G1 Z0.01 F5.");
+		comRequestToSend("G1 Z0.005 F5.");
+	}
+	comHitUp();
+	if (!comFetch)
+	{
+		comRequestToSend("G1 Z-0.005 F5.");
+	}
+	else
+	{
+		comRequestToSend("G1 Z0.005 F5.");
 	}
 	comFetch = !comFetch;
-	comHitUp();
 }
 
 void qtCyberDip::comClickRetButton()
@@ -877,7 +885,7 @@ void qtCyberDip::capClickConnect()
 #endif
 	screen->capSetHWND(capWins[index]);
 	screen->show();
-	hide();
+	//hide();
 	capClickClearButton();
 	screen->capStart();
 	setCursor(Qt::ArrowCursor);
