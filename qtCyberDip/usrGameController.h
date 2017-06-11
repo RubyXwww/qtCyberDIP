@@ -34,7 +34,9 @@ private:
 		FINDLOC,
 		JUDGELOC,
 		CHECK,
-		DROP
+		DROP,
+		GAMEOVER,
+		NEWGAME
 	};
 	enum ButtonType {
 		STARTB,
@@ -59,6 +61,7 @@ private:
 	DropLoc currentBestLoc;
 	bool isFirstBlock;
 	bool jump_flag;
+	bool isGame;
 	//bool doubleDetection;
 	bool waitUp;
 	int delay_count;

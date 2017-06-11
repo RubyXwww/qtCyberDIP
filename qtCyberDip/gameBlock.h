@@ -9,7 +9,8 @@ enum BlockType {
 	REVERSEL,
 	FORWARDZ,
 	REVERSEZ,
-	FLATT
+	FLATT,
+	NONE
 };
 
 struct Pair {

@@ -97,9 +97,9 @@ vector<vector<int>> readFromImg(cv::Mat& img, bool isFirst) {
 		Mat erosion_img, resize_dst, dst;
 		erode(img, erosion_img, element);
 		dst = img - erosion_img;
-		threshold(dst, dst, 45, 255, 0);
-		resize(dst, resize_dst, Size(10, 20));
-		threshold(resize_dst, resize_dst, 215, 255, 0);
+		threshold(dst, dst, 100, 255, 0);
+		resize(dst, resize_dst, Size(10, 20), (0, 0), (0, 0), CV_INTER_AREA);
+		threshold(resize_dst, resize_dst, 150, 255, 0);
 		resize(resize_dst, img, Size(img.cols, img.rows), 0, 0, INTER_NEAREST);
 		//imshow("resize", resize_dst);
 		for (int i = 0; i < 20; i++) {
@@ -156,7 +156,7 @@ void showState(cv::Mat& pt) {
 
 int main(int argc, char *argv[])
 {
-	/*
+	
 	random_device r;
 	default_random_engine el(r());
 	uniform_int_distribution<int> uniform_dist(0, 6);
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < dl.rotation; i++) b.rotate();
 		del_row = state.drop(b, dl.loc);
 		total_del_row += del_row;
-		if (del_row) qDebug() << "Total Deleted Row:" << total_del_row;
+		//if (del_row) qDebug() << "Total Deleted Row:" << total_del_row;
 		type = ntype;
 	}
 	chrono::steady_clock::time_point end = chrono::steady_clock::now();
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 	qDebug() << "Total Times: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
 	
 	return 0;
-
+	/*
 	Mat pt = imread("../images/blocklabel/0.jpg");
 	Mat main_area;
 	vector<vector<int>> grid;
@@ -210,24 +210,43 @@ int main(int argc, char *argv[])
 	//imshow("Origin", pt);
 	initialLocation(pt);
 	stringstream ss;
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		ss.str("");
 		ss << i;
 		pt = imread("../images/blocklabel/"+ss.str()+".jpg");
-		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
-		grid = readFromImg(main_area, false);
+		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_BGR2HSV);
+		vector<Mat> mv,mvv;
+		split(main_area, mvv);
+		Mat test_v = mvv[2];
+		main_area = pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]));
+		int col, row;
+		col = main_area.cols;
+		row = main_area.rows;
+		split(main_area, mv);
+		Mat test(Size(col, row), CV_8UC1, Scalar(0));
+		for (int i = 0; i < row; ++i){
+			for (int j = 0; j < col; ++j){
+				test.at<uchar>(i, j) = max((int)mv[0].at<uchar>(i, j), (int)mv[1].at<uchar>(i, j));
+			test.at<uchar>(i, j) = max((int)mv[2].at<uchar>(i, j), (int)test.at<uchar>(i, j));
+			}
+		}
+		imshow("test", test);
+		imshow("test_V", test_v);
+		grid = readFromImg(test_v, false);
+		
+		//grid = readFromImg(main_area, false);
 		currentState.refresh(grid);
-		combineAndshow(pt, main_area);
-		showState(pt);
+		combineAndshow(pt, test_v);
+		//showState(pt);
 		imshow("Origin", pt);
 		waitKey(0);
 	}
 
 	return 0;*/
-	
+	/*
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();
 
-	return a.exec();
+	return a.exec();*/
 }

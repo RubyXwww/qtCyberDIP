@@ -4,7 +4,7 @@
 #include<fstream>
 #ifdef VIA_OPENCV
 
-#define DELAY_STEP 48
+#define DELAY_STEP 42
 #define FAIL_STEP 12
 #define CHECK_STEP 12
 
@@ -33,19 +33,6 @@ usrGameController::usrGameController(void* qtCD)
 	qDebug() << "usrGameController online.";
 	device = new deviceCyberDip(qtCD);//设备代理类
 	cv::namedWindow(WIN_NAME);
-	/*
-	ofstream out;
-	out.open("../images/blocklabel/features.txt");
-	for (int i = 0; i < 7; i++) {
-		stringstream ss;
-		ss << i;
-		cv::Mat img = cv::imread(("../images/blocklabel/" + ss.str() + "_.jpg").c_str());
-		for (double f : getFeature(img)) {
-			out << f << '\t';
-		}
-		out << '\n';
-	}
-	out.close();*/
 	
 	ifstream fin("../images/blocklabel/features.txt");
 	double tmp;
@@ -69,7 +56,8 @@ usrGameController::usrGameController(void* qtCD)
 	isFirstBlock = false;
 	jump_flag = false;
 	Op_delay = 1000;
-	currentRecursiveState = MENU;
+	currentRecursiveState = NEWGAME;
+	isGame = false;
 
 	blockMap[0x000f] = Tmp(SLIDE, 0);
 	blockMap[0x8888] = Tmp(SLIDE, 1);
@@ -336,6 +324,7 @@ BlockType usrGameController::getBlockType(cv::Mat& img) {
 			max_distance = distance;
 		}
 	}
+	if (max_distance > 1e-3) type = 7;
 	return BlockType(type);
 }
 
@@ -410,9 +399,9 @@ vector<vector<int>> usrGameController::readFromImg(cv::Mat& img, bool isFirst) {
 		Mat erosion_img, resize_dst, dst;
 		erode(img, erosion_img, element);
 		dst = img - erosion_img;
-		threshold(dst, dst, 45, 255, 0);
-		resize(dst, resize_dst, Size(10, 20));
-		threshold(resize_dst, resize_dst, 215, 255, 0);
+		threshold(dst, dst, 80, 255, 0);
+		resize(dst, resize_dst, Size(10, 20), (0, 0), (0, 0), CV_INTER_AREA);
+		threshold(resize_dst, resize_dst, 150, 255, 0);
 		resize(resize_dst, img, Size(img.cols, img.rows), 0, 0, INTER_NEAREST);
 		//imshow("resize", resize_dst);
 		for (int i = 0; i < 20; i++) {
@@ -439,6 +428,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	//截取图像边缘
 	cv::Mat rgba_pt = img(cv::Rect(0, UP_CUT, imgSize.width,imgSize.height));
 	cv::Mat pt, main_area;
+	vector<Mat> hsv_model;
 	cv::cvtColor(rgba_pt, pt, CV_RGBA2RGB);
 	cv::imshow(WIN_NAME, pt);
 
@@ -450,11 +440,17 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	Tmp block_tmp;
 	chrono::steady_clock::time_point current = chrono::steady_clock::now();
 
-	if (currentRecursiveState != MENU && currentRecursiveState != INITIAL) {
-		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
+	if (isGame) {
+		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2HSV);
+		split(main_area, hsv_model);
+		main_area = hsv_model[2];
 		grid = readFromImg(main_area);
 		combineAndshow(pt, main_area);
 		showState(pt);
+	}
+	if (currentRecursiveState == GAMEOVER) {
+		destroyWindow("ComputerVision");
+		destroyWindow("State");
 	}
 
 	if(chrono::duration_cast<chrono::milliseconds>(current - lastOp).count() > Op_delay) switch (currentRecursiveState) {
@@ -474,17 +470,17 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			currentRecursiveState = MENU;
 			break;
 		}
-		Op_delay = 1000;
+		Op_delay = 900;
 		qDebug() << "Initializing...";
-		initialLocation(pt);
-		//isFirstBlock = true;
-
-		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
+		if(background[WIDTH] == 0) initialLocation(pt);
+		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2HSV);
+		split(main_area, hsv_model);
+		main_area = hsv_model[2];
 		grid = readFromImg(main_area, true);
 		block_tmp = readBlockFromMatrix(grid, true);
 		nextBlock = gameBlock(block_tmp.t);
-		currentState.clear();
 		currentRecursiveState = NEWCYCLE;
+		isGame = true;
 		qDebug() << " Start...";
 		break;
 	case NEWCYCLE:
@@ -499,10 +495,13 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 
 	case NEXTBLOCK:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		currentBlock = nextBlock;
 		nextBlock = gameBlock(nextType);
-		currentRecursiveState = DELAY;
-		
+		currentRecursiveState = DELAY;	
 		break;
 	case DELAY:
 		if (++delay_count > DELAY_STEP) {
@@ -511,16 +510,23 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		}
 		break;
 	case REFRESH:
-		//cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
-		//grid = readFromImg(main_area);
+		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		currentState.refresh(grid);
 		currentState.show();
 		currentRecursiveState = FINDLOC;
-		
 		break;
 	case FINDLOC:
+		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		qDebug() << "Finding Best Location...";
-		click(ROTATEB, true);
+		//click(ROTATEB, true);
 		qDebug() << "current block type:";
 		currentBlock.show();
 		qDebug() << "next block type";
@@ -533,8 +539,11 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		qDebug() << "Judging Location...";
 		break;
 	case JUDGELOC:
-		//cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2GRAY);
-		//grid = readFromImg(main_area);
+		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		if (jump_flag && accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
 			currentRecursiveState = NEWCYCLE;
 			qDebug() << "Next Step...";
@@ -568,6 +577,11 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		}
 		break;
 	case CHECK:
+		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		block_tmp = readBlockFromMatrix(grid);
 		if (jump_flag && accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
 			currentRecursiveState = NEWCYCLE;
@@ -586,6 +600,11 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		}
 		break;
 	case DROP:
+		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+		if (nextType == NONE) {
+			currentRecursiveState = GAMEOVER;
+			break;
+		}
 		if (accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
 			device->comHitUp();
 			waitUp = false;
@@ -602,41 +621,28 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			waitUp = true;
 		}
 		break;
+	case GAMEOVER:
+		qDebug() << "Game Over";
+		device->comMoveToScale(0, 0);
+		currentState.clear();
+		currentRecursiveState = NEWGAME;
+		break;
+	case NEWGAME:
+		if (isMenu(pt)) {
+			qDebug() << "Start New Game";
+			currentRecursiveState = MENU;
+		}
+		lastOp = lastOp = chrono::steady_clock::now();
+		break;
 	
 	}
+	else if (isGame) {
+		if (jump_flag && accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
+			currentRecursiveState = NEWCYCLE;
+			qDebug() << "Next Step...";
+		}
+	}
 	savePicture(pt);
-
-	/*
-	//判断鼠标点击尺寸
-	if (argM.box.x >= 0 && argM.box.x < imgSize.width&&
-		argM.box.y >= 0 && argM.box.y < imgSize.height
-		)
-	{
-		
-		qDebug() << "X:" << argM.box.x << " Y:" << argM.box.y;
-		qDebug() << pt.at<cv::Vec3b>(argM.box.x ,argM.box.y)[0] << ' ' << pt.at<cv::Vec3b>(argM.box.x, argM.box.y)[1] << ' ' << pt.at<cv::Vec3b>(argM.box.x, argM.box.y)[2];
-		if (argM.Hit)
-		{
-			device->comHitDown();
-		}
-		device->comMoveToScale(((double)argM.box.y + argM.box.height) / pt.rows , 1 - ((double)argM.box.x + argM.box.width) / pt.cols);
-		//cv::imwrite(("../images/"+name + ".jpg").c_str(), pt);
-		//cv::Mat block_img = pt(cv::Rect(370, 30, 95, 75));
-		//BlockType type = getBlockType(block_img);
-		//cv::imwrite(("../images/cap_block/" + name + ".jpg").c_str(), block_img);
-		//qDebug() << "BlockType:" << int(type);
-		//
-		currentRecursiveState = NEXTBLOCK;
-		argM.box.x = -1; argM.box.y = -1;
-		if (argM.Hit)
-		{
-			device->comHitUp();
-		}
-		else
-		{
-			device->comHitOnce();
-		}
-	}*/
 	return 0; 
 }
 
@@ -726,8 +732,8 @@ void usrGameController::combineAndshow(cv::Mat& pt, cv::Mat& main_area) {
 	cv::circle(imgg, Point(buttons[RIGHT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
 	//rectangle(img, Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::rectangle(imgg, Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT]), Scalar(0), 2, 8, 0);
-	cv::namedWindow("Computer Vision", CV_WINDOW_AUTOSIZE);
-	cv::imshow("Computer Vision", imgg);
+	cv::namedWindow("ComputerVision", CV_WINDOW_AUTOSIZE);
+	cv::imshow("ComputerVision", imgg);
 }
 
 void usrGameController::showState(cv::Mat& pt) {

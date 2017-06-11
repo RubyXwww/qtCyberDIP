@@ -213,7 +213,7 @@ double gameState::getReward(int del_row_cur, int del_row_next) {
 
 double gameState::getRowTransitions() {
 	double Row_Transitions = 0;
-	for (int i = 19; i > -1/*19 - *max_element(heights.cbegin(), heights.cend())*/; i--) {
+	for (int i = 19; i > 19 - *max_element(heights.cbegin(), heights.cend()); i--) {
 		int state = 1;
 		for (int j = 0; j < 10; j++) {
 			if (grid[i][j] != state) {
