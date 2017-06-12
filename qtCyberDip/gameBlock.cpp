@@ -185,7 +185,7 @@ void gameBlock::rotate() {
 }
 /*for test*/
 void gameBlock::show() {
-	qDebug() << "Block type:";
+	qDebug() << "Block rotation:" << current;
 	for (int j = 0; j < 4; j++) {
 		qDebug() << shapes[current][j][0] << shapes[current][j][1] << shapes[current][j][2] << shapes[current][j][3];
 	}
@@ -193,7 +193,7 @@ void gameBlock::show() {
 
 void gameBlock::showAll() {
 	for (int i = 0; i < rotations; i++) {
-		qDebug() << "Block type:" << i;
+		qDebug() << "Block rotation:" << i;
 		vector<vector<int>> tmp = shapes[i];
 		for (int j = 0; j < 4; j++) {
 			qDebug() << shapes[i][j][0] << shapes[i][j][1] << shapes[i][j][2] << shapes[i][j][3];

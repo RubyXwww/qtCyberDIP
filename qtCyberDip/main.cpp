@@ -156,7 +156,7 @@ void showState(cv::Mat& pt) {
 
 int main(int argc, char *argv[])
 {
-	
+	/*
 	random_device r;
 	default_random_engine el(r());
 	uniform_int_distribution<int> uniform_dist(0, 6);
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 		dl = state.getBestDropLoc(b);
 		//del_row += dl.del_row;
 		//state.show();
-		//b.show();
+		//b.showAll();
 		step++;
 		//qDebug() << "Best Location: " << dl.loc << '\t' << "Best Rotation:" << dl.rotation << "\t\t" << "Total Deleted Row: " << del_row ;
 		//qDebug() << "Drop?";
@@ -243,10 +243,10 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;*/
-	/*
+	
 	QApplication a(argc, argv);
 	qtCyberDip w;
 	w.show();
 
-	return a.exec();*/
+	return a.exec();
 }

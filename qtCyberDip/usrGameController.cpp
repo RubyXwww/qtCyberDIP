@@ -178,7 +178,7 @@ bool usrGameController::isMenu(cv::Mat& img) {
 		//qDebug() << menuFeature[i] << ' ' << feature[i];
 		distance += pow(menuFeature[i] - feature[i], 2);
 	}
-	qDebug() << distance;
+	//qDebug() << distance;
 	return distance < 1e-3;
 }
 
@@ -324,7 +324,7 @@ BlockType usrGameController::getBlockType(cv::Mat& img) {
 			max_distance = distance;
 		}
 	}
-	if (max_distance > 1e-3) type = 7;
+	if (max_distance > 1e-2) type = 7;
 	return BlockType(type);
 }
 
@@ -427,7 +427,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 
 	//截取图像边缘
 	cv::Mat rgba_pt = img(cv::Rect(0, UP_CUT, imgSize.width,imgSize.height));
-	cv::Mat pt, main_area;
+	cv::Mat pt, main_area, tmp;
 	vector<Mat> hsv_model;
 	cv::cvtColor(rgba_pt, pt, CV_RGBA2RGB);
 	cv::imshow(WIN_NAME, pt);
@@ -436,7 +436,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	if (pt_rows == 0) pt_rows = pt.rows;
 
 	BlockType nextType;
-	vector<vector<int>> grid;
+	vector<vector<int>> grid,new_grid;
 	Tmp block_tmp;
 	chrono::steady_clock::time_point current = chrono::steady_clock::now();
 
@@ -470,7 +470,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			currentRecursiveState = MENU;
 			break;
 		}
-		Op_delay = 900;
+		Op_delay = 950;
 		qDebug() << "Initializing...";
 		if(background[WIDTH] == 0) initialLocation(pt);
 		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2HSV);
@@ -552,6 +552,14 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		block_tmp = readBlockFromMatrix(grid);
 
 		if (block_tmp.clear) jump_flag = true;
+
+		if (block_tmp.r == 4) {
+			cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), tmp, CV_RGB2HSV);
+			split(tmp, hsv_model);
+			tmp = hsv_model[2];
+			new_grid = readFromImg(tmp, true);
+			block_tmp = readBlockFromMatrix(new_grid);
+		}
 		qDebug() << "Rotation: " << block_tmp.r << '(' << currentBestLoc.rotation << ')';
 		qDebug() << "Loc: " << block_tmp.loc << '(' << currentBestLoc.loc << ')';
 
@@ -583,6 +591,13 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			break;
 		}
 		block_tmp = readBlockFromMatrix(grid);
+		if (block_tmp.r == 4) {
+			cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), tmp, CV_RGB2HSV);
+			split(tmp, hsv_model);
+			tmp = hsv_model[2];
+			new_grid = readFromImg(tmp, true);
+			block_tmp = readBlockFromMatrix(new_grid);
+		}
 		if (jump_flag && accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
 			currentRecursiveState = NEWCYCLE;
 			qDebug() << "Next Step...";
@@ -626,17 +641,24 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		device->comMoveToScale(0, 0);
 		currentState.clear();
 		currentRecursiveState = NEWGAME;
+		isGame = false;
 		break;
 	case NEWGAME:
 		if (isMenu(pt)) {
 			qDebug() << "Start New Game";
 			currentRecursiveState = MENU;
 		}
-		lastOp = lastOp = chrono::steady_clock::now();
+		else if (next_background[WIDTH] != 0) { //防止广告
+			nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
+			if (nextType != NONE) {
+				isGame = true;
+			}
+		}
+		lastOp = chrono::steady_clock::now();
 		break;
 	
 	}
-	else if (isGame) {
+	else if (isGame && currentRecursiveState != NEWCYCLE) {
 		if (jump_flag && accumulate(grid[0].cbegin(), grid[0].cend(), 0) > 0 && accumulate(grid[1].cbegin(), grid[1].cend(), 0) == 0) {
 			currentRecursiveState = NEWCYCLE;
 			qDebug() << "Next Step...";
@@ -645,47 +667,6 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	savePicture(pt);
 	return 0; 
 }
-
-//鼠标回调函数
-/*void mouseCallback(int event, int x, int y, int flags, void*param)
-{
-	usrGameController::MouseArgs* m_arg = (usrGameController::MouseArgs*)param;
-	switch (event)
-	{
-	case CV_EVENT_MOUSEMOVE: // 鼠标移动时
-	{
-		if (m_arg->Drawing)
-		{
-			m_arg->box.width = x - m_arg->box.x;
-			m_arg->box.height = y - m_arg->box.y;
-		}
-	}
-	break;
-	case CV_EVENT_LBUTTONDOWN:case CV_EVENT_RBUTTONDOWN: // 左/右键按下
-	{
-		m_arg->Hit = event == CV_EVENT_RBUTTONDOWN;
-		m_arg->Drawing = true;
-		m_arg->box = cvRect(x, y, 0, 0);
-	}
-	break;
-	case CV_EVENT_LBUTTONUP:case CV_EVENT_RBUTTONUP: // 左/右键弹起
-	{
-		m_arg->Hit = false;
-		m_arg->Drawing = false;
-		if (m_arg->box.width < 0)
-		{
-			m_arg->box.x += m_arg->box.width;
-			m_arg->box.width *= -1;
-		}
-		if (m_arg->box.height < 0)
-		{
-			m_arg->box.y += m_arg->box.height;
-			m_arg->box.height *= -1;
-		}
-	}
-	break;
-	}
-}*/
 
 /*for test*/
 void mouseCallback(int event, int x, int y, int flags, void*param)

@@ -213,7 +213,7 @@ double gameState::getReward(int del_row_cur, int del_row_next) {
 
 double gameState::getRowTransitions() {
 	double Row_Transitions = 0;
-	for (int i = 19; i > 19 - *max_element(heights.cbegin(), heights.cend()); i--) {
+	for (int i = 19; i > -1/*19 - *max_element(heights.cbegin(), heights.cend())*/; i--) {
 		int state = 1;
 		for (int j = 0; j < 10; j++) {
 			if (grid[i][j] != state) {
@@ -348,6 +348,7 @@ DropLoc gameState::getBestDropLoc(gameBlock& cur) {
 	double best_reward = -100000, reward;
 	int del_row_cur;
 	double land_height;
+	int priority, best_priority;
 	DropLoc best;
 	for (int r = 0; r < cur.rotations; r++) {
 		for (int x = 0; x < 11 - cur.hw_pairs[r].width; x++) {
@@ -355,10 +356,22 @@ DropLoc gameState::getBestDropLoc(gameBlock& cur) {
 			del_row_cur = state_cp.drop_PD(cur, x, land_height);
 			if (state_cp.isGameOver()) continue;
 			reward = state_cp.getReward_PD(del_row_cur, land_height);
+			if (x < 5) priority = 5 - x;
+			else priority = x - 5;
+			if (r > 0 && x < 5) priority++;
+			priority += r;
 			if (reward > best_reward) {
 				best_reward = reward;
 				best.loc = x;
 				best.rotation = r;
+				best_priority = priority;
+				best.del_row = del_row_cur;
+			}
+			else if (reward == best_reward && priority < best_priority) {
+				best_reward = reward;
+				best.loc = x;
+				best.rotation = r;
+				best_priority = priority;
 				best.del_row = del_row_cur;
 			}
 		}
