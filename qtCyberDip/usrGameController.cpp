@@ -287,7 +287,7 @@ void usrGameController::initialLocation(cv::Mat& img) {
 	}
 	else {
 		int dy = 0;
-		sort(y, comp);
+		sort(y, compp);
 		dy = min(y[1] - y[0], y[2] - y[1]);
 		if (y[2] + dy < background[DOWN]) y.push_back(y[2] + dy);
 		else{
