@@ -9,7 +9,7 @@
 #include <chrono>
 #define WIN_NAME "Frame"
 
-//ÓÎÏ·¿ØÖÆÀà
+//æ¸¸æˆæ§åˆ¶ç±»
 class usrGameController
 {
 private:
@@ -51,7 +51,8 @@ private:
 	vector<vector<double>> blockFeatures;
 	vector<int> background;
 	vector<int> next_background;
-	vector<int> buttons;
+	//vector<int> buttons;
+	vector<cv::Point> buttons;
 	vector<int> start_button;
 	map<int, Tmp> blockMap;
 	int pt_cols, pt_rows;
@@ -70,8 +71,8 @@ private:
 	int Op_delay;
 	chrono::steady_clock::time_point lastOp = chrono::steady_clock::now();
 	
-//ÒÔÏÂÊÇÎªÁËÊµÏÖÑİÊ¾Ğ§¹û£¬Ôö¼ÓµÄÄÚÈİ
-	//Êó±ê»Øµ÷½á¹¹Ìå
+//ä»¥ä¸‹æ˜¯ä¸ºäº†å®ç°æ¼”ç¤ºæ•ˆæœï¼Œå¢åŠ çš„å†…å®¹
+	//é¼ æ ‡å›è°ƒç»“æ„ä½“
 	struct MouseArgs{
 		cv::Rect box;
 		bool Drawing, Hit;
@@ -81,10 +82,10 @@ private:
 			box = cv::Rect(0, 0, -1, -1);
 		}
 	};
-	//Êó±ê»Øµ÷º¯Êı
+	//é¼ æ ‡å›è°ƒå‡½æ•°
 	friend void  mouseCallback(int event, int x, int y, int flags, void*param);
 	MouseArgs argM;
-//ÒÔÉÏÊÇÎªÁËÊµÏÖ¿ÎÌÃÑİÊ¾Ğ§¹û£¬Ôö¼ÓµÄÄÚÈİ
+//ä»¥ä¸Šæ˜¯ä¸ºäº†å®ç°è¯¾å ‚æ¼”ç¤ºæ•ˆæœï¼Œå¢åŠ çš„å†…å®¹
 	vector<double> getFeature(cv::Mat& img);
 	void getStartButton(cv::Mat& img);
 	bool isMenu(cv::Mat& img);
@@ -101,18 +102,18 @@ private:
 	/*end for test*/
 	
 public:
-	//¹¹Ôìº¯Êı£¬ËùÓĞ±äÁ¿µÄ³õÊ¼»¯¶¼Ó¦ÔÚ´ËÍê³É
+	//æ„é€ å‡½æ•°ï¼Œæ‰€æœ‰å˜é‡çš„åˆå§‹åŒ–éƒ½åº”åœ¨æ­¤å®Œæˆ
 	usrGameController(void* qtCD);
-	//Îö¹¹º¯Êı£¬»ØÊÕ±¾ÀàËùÓĞ×ÊÔ´
+	//ææ„å‡½æ•°ï¼Œå›æ”¶æœ¬ç±»æ‰€æœ‰èµ„æº
 	~usrGameController();
 	
 	int usrProcessImage(cv::Mat& img);
 };
 
-//ÒÔÏÂÊÇÎªÁËÊµÏÖÑİÊ¾Ğ§¹û£¬Ôö¼ÓµÄÄÚÈİ
-//Êó±ê»Øµ÷º¯Êı
+//ä»¥ä¸‹æ˜¯ä¸ºäº†å®ç°æ¼”ç¤ºæ•ˆæœï¼Œå¢åŠ çš„å†…å®¹
+//é¼ æ ‡å›è°ƒå‡½æ•°
 void  mouseCallback(int event, int x, int y, int flags, void*param);
-//ÒÔÉÏÊÇÎªÁËÊµÏÖ¿ÎÌÃÑİÊ¾Ğ§¹û£¬Ôö¼ÓµÄÄÚÈİ
+//ä»¥ä¸Šæ˜¯ä¸ºäº†å®ç°è¯¾å ‚æ¼”ç¤ºæ•ˆæœï¼Œå¢åŠ çš„å†…å®¹
 
 #endif
 #endif
