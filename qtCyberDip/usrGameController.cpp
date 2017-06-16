@@ -8,7 +8,7 @@
 #define FAIL_STEP 12
 #define CHECK_STEP 12
 
-//ππ‘Ï”Î≥ı ºªØ
+//ÊûÑÈÄ†‰∏éÂàùÂßãÂåñ
 using namespace cv;
 
 struct ss {
@@ -18,6 +18,10 @@ struct ss {
 bool comp(const ss &a, const ss &b)
 {
 	return a.a>b.a;
+}
+
+bool compp(const int &a, const int &b){
+	return a < b;
 }
 
 void swap(int &a, int &b) {
@@ -31,7 +35,7 @@ void swap(int &a, int &b) {
 usrGameController::usrGameController(void* qtCD)
 {
 	qDebug() << "usrGameController online.";
-	device = new deviceCyberDip(qtCD);//…Ë±∏¥˙¿Ì¿‡
+	device = new deviceCyberDip(qtCD);//ËÆæÂ§á‰ª£ÁêÜÁ±ª
 	cv::namedWindow(WIN_NAME);
 	
 	ifstream fin("../images/blocklabel/features.txt");
@@ -51,7 +55,8 @@ usrGameController::usrGameController(void* qtCD)
 	pt_rows = 0;
 	background = vector<int>(6, 0);
 	next_background = vector<int>(6, 0);
-	buttons = vector<int>(4, 0);
+	//buttons = vector<int>(4, 0);
+	buttons = vector<cv::Point>(5);
 	start_button = vector<int>(2, 0);
 	isFirstBlock = false;
 	jump_flag = false;
@@ -83,7 +88,7 @@ usrGameController::usrGameController(void* qtCD)
 	cv::setMouseCallback(WIN_NAME, mouseCallback, (void*)&(argM));
 }
 
-//Œˆππ
+//ÊûêÊûÑ
 usrGameController::~usrGameController()
 {
 	cv::destroyAllWindows();
@@ -101,19 +106,19 @@ void usrGameController::click(ButtonType bt, bool moveOnly) {
 		qDebug() << "Start Game!";
 		break;
 	case LEFTB:
-		device->comMoveToScale(((double)buttons[DOWN]) / pt_rows, 1 - ((double)buttons[LEFT]) / pt_cols);
+		device->comMoveToScale(((double)buttons[LEFTB].y) / pt_rows, 1 - ((double)buttons[LEFTB].x) / pt_cols);
 		qDebug() << "Left!";
 		break;
 	case RIGHTB:
-		device->comMoveToScale(((double)buttons[DOWN]) / pt_rows, 1 - ((double)buttons[RIGHT]) / pt_cols);
+		device->comMoveToScale(((double)buttons[RIGHTB].y) / pt_rows, 1 - ((double)buttons[RIGHTB].x) / pt_cols);
 		qDebug() << "Right!";
 		break;
 	case ROTATEB:
-		device->comMoveToScale(((double)buttons[UP]) / pt_rows, 1 - ((double)buttons[RIGHT]) / pt_cols);
+		device->comMoveToScale(((double)buttons[ROTATEB].y) / pt_rows, 1 - ((double)buttons[ROTATEB].x) / pt_cols);
 		qDebug() << "Rotate!";
 		break;
 	case DROPB:
-		device->comMoveToScale(((double)buttons[UP]) / pt_rows, 1 - ((double)buttons[LEFT]) / pt_cols);
+		device->comMoveToScale(((double)buttons[DROPB].y) / pt_rows, 1 - ((double)buttons[DROPB].x) / pt_cols);
 		qDebug() << "Drop!";
 		break;
 	}
@@ -130,7 +135,7 @@ void usrGameController::getStartButton(cv::Mat& img) {
 	split(img, channel);
 	Canny(channel[1], canny_output, thresh, thresh * 2, 3);
 
-	/// —∞’“¬÷¿™
+	/// ÂØªÊâæËΩÆÂªì
 	findContours(canny_output, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
 	int len = contours.size();
@@ -147,7 +152,7 @@ void usrGameController::getStartButton(cv::Mat& img) {
 
 	sort(sss.begin(), sss.end(), comp);
 
-	///  º∆À„÷––ƒæÿ:
+	///  ËÆ°ÁÆó‰∏≠ÂøÉÁü©:
 	vector<Point2f> mc(len);
 	for (int i = 0; i < len; i++)
 	{
@@ -189,10 +194,10 @@ void usrGameController::initialLocation(cv::Mat& img) {
 	vector<int> stop_button(2, 0);
 
 	cvtColor(img, img_gray, CV_RGB2GRAY);
-	/// ”√CannyÀ„◊”ºÏ≤‚±ﬂ‘µ
+	/// Áî®CannyÁÆóÂ≠êÊ£ÄÊµãËæπÁºò
 	Canny(img_gray, canny_output, thresh, thresh * 2, 3);
 
-	/// —∞’“¬÷¿™
+	/// ÂØªÊâæËΩÆÂªì
 	findContours(canny_output, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
 	int len = contours.size();
@@ -209,7 +214,7 @@ void usrGameController::initialLocation(cv::Mat& img) {
 
 	sort(sss.begin(), sss.end(), comp);
 
-	///  º∆À„÷––ƒæÿ:
+	///  ËÆ°ÁÆó‰∏≠ÂøÉÁü©:
 	vector<Point2f> mc(len);
 	for (int i = 0; i < len; i++)
 	{
@@ -235,8 +240,13 @@ void usrGameController::initialLocation(cv::Mat& img) {
 	background[WIDTH] = background[RIGHT] - background[LEFT];
 	background[HEIGHT] = background[DOWN] - background[UP];
 
+	vector<int> x;
+	vector<int> y;
+	vector<cv::Point> tmp(4);
+	bool flag = false;
 	int tmp_x, tmp_y, index;
-	for (int num = 1; num < contours.size(); ++num) {
+	radius = 5;
+	for (int num = 1; num < contours.size(); ++num){
 		index = sss[num].i;
 		tmp_x = int(round(mc[index].x));
 		tmp_y = int(round(mc[index].y));
@@ -244,31 +254,77 @@ void usrGameController::initialLocation(cv::Mat& img) {
 			if (stop_button[0] == 0) stop_button[0] = tmp_x;
 			if (stop_button[1] == 0) stop_button[1] = tmp_y;
 		}
-		if (tmp_y >= background[UP] && tmp_y <= background[DOWN]) {
-			if (tmp_x <= background[LEFT] || tmp_x >= background[RIGHT]) {
-				if (buttons[LEFT] == 0) {
-					buttons[LEFT] = tmp_x;
-				}
-				else {
-					if (abs(tmp_x - buttons[LEFT]) > background[WIDTH]) {
-						buttons[RIGHT] = tmp_x;
+		if (x.size() + y.size() < 4){
+			if (tmp_y >= background[UP] && tmp_y <= background[DOWN]) {
+				if (tmp_x <= background[LEFT] || tmp_x >= background[RIGHT]){
+					if (x.size() == 0 && y.size() == 0){
+						x.push_back(tmp_x);
+						y.push_back(tmp_y);
+						radius = sqrtf(sss[num].a / CV_PI);
+						continue;
 					}
-				}
-				if (buttons[UP] == 0) {
-					buttons[UP] = tmp_y;
-				}
-				else {
-					if (abs(tmp_y - buttons[UP]) > 1) {
-						buttons[DOWN] = tmp_y;
+					if (abs(tmp_x - x[0]) > background[WIDTH] && x.size() < 2) {
+						x.push_back(tmp_x);
+						flag = true;
+					}
+					int n = 0;
+					for (; n < y.size(); ++n){
+						if (abs(tmp_y - y[n]) < radius){
+							break;
+						}
+					}
+					if (n >= y.size()){
+						y.push_back(tmp_y);
 					}
 				}
 			}
 		}
-		if (buttons[LEFT] && buttons[RIGHT] && buttons[UP] && buttons[DOWN] && stop_button[0] && stop_button[1]) break;
+		if (stop_button[0] && stop_button[1]) break;
+	}
+	if (flag){
+		tmp[0] = Point(x[0], y[0]); tmp[1] = Point(x[1], y[0]);
+		tmp[2] = Point(x[0], y[1]); tmp[3] = Point(x[1], y[1]);
+	}
+	else {
+		int dy = 0;
+		sort(y, comp);
+		dy = min(y[1] - y[0], y[2] - y[1]);
+		if (y[2] + dy < background[DOWN]) y.push_back(y[2] + dy);
+		else{
+			if (y[2] - y[1] > dy * 3 / 2) y.push_back(y[1] + dy);
+			else if (y[1] - y[0] > dy * 3 / 2) y.push_back(y[0] + dy);
+			else y.push_back(y[0] - dy);
+		}
+		tmp[0] = Point(x[0], y[0]); tmp[1] = Point(x[0], y[1]);
+		tmp[2] = Point(x[0], y[2]); tmp[3] = Point(x[0], y[3]);
 	}
 
-	swap(buttons[LEFT], buttons[RIGHT]);
-	swap(buttons[UP], buttons[DOWN]);
+	Mat mv, mvt, target;
+	stringstream ss;
+	float dist, min_dist;
+	int type;
+	for (int i = 0; i < 4; ++i){
+		mv = img(Rect(tmp[i].x - round(radius) / 2, tmp[i].y - round(radius) / 2, round(radius), round(radius)));
+		resize(mv, mvt, Size(5, 5));
+		type = 1;
+		target = imread("../images/button/1.jpg");
+		//cout << target.size() << endl;
+		min_dist = norm(mvt, target, CV_L1);
+		//cout << min_dist << endl;
+		for (int j = 2; j <= 4; ++j){
+			ss.str("");
+			ss << j;
+			target = imread("../images/button/" + ss.str() + ".jpg");
+			//cout << target.size() << endl;
+			dist = norm(mvt, target, CV_L1);
+			if (dist < min_dist){
+				type = j;
+				min_dist = dist;
+			}
+		}
+		buttons[type] = tmp[i];
+		//cout << min_dist << '\t' << (ButtonType)type << '\t' << tmp[i] << endl;
+	}
 
 	double block_x = double(background[WIDTH]) / 10;
 	double block_y = double(background[HEIGHT]) / 20;
@@ -414,7 +470,7 @@ vector<vector<int>> usrGameController::readFromImg(cv::Mat& img, bool isFirst) {
 	
 }
 
-//¥¶¿ÌÕºœÒ 
+//Â§ÑÁêÜÂõæÂÉè 
 int usrGameController::usrProcessImage(cv::Mat& img)
 {
 	
@@ -425,7 +481,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		return -1;
 	}
 
-	//Ωÿ»°ÕºœÒ±ﬂ‘µ
+	//Êà™ÂèñÂõæÂÉèËæπÁºò
 	cv::Mat rgba_pt = img(cv::Rect(0, UP_CUT, imgSize.width,imgSize.height));
 	cv::Mat pt, main_area, tmp;
 	vector<Mat> hsv_model;
@@ -648,7 +704,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			qDebug() << "Start New Game";
 			currentRecursiveState = MENU;
 		}
-		else if (next_background[WIDTH] != 0) { //∑¿÷ππ„∏Ê
+		else if (next_background[WIDTH] != 0) { //Èò≤Ê≠¢ÂπøÂëä
 			nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 			if (nextType != NONE) {
 				isGame = true;
@@ -674,7 +730,7 @@ void mouseCallback(int event, int x, int y, int flags, void*param)
 	usrGameController::MouseArgs* m_arg = (usrGameController::MouseArgs*)param;
 	switch (event)
 	{
-	case CV_EVENT_LBUTTONUP:case CV_EVENT_RBUTTONUP: // ◊Û/”“º¸µØ∆
+	case CV_EVENT_LBUTTONUP:case CV_EVENT_RBUTTONUP: // Â∑¶/Âè≥ÈîÆÂºπËµ∑
 	{
 		m_arg->Hit = true;
 	}
@@ -683,10 +739,10 @@ void mouseCallback(int event, int x, int y, int flags, void*param)
 }
 
 void usrGameController::showDetection(cv::Mat& img) {
-	cv::circle(img, Point(buttons[LEFT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[LEFT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[RIGHT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[RIGHT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[LEFTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[RIGHTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[DROPB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[ROTATEB], 5, Scalar(0), 2, 8, 0);
 	cv::rectangle(img, Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::rectangle(img, Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::namedWindow("Detection", CV_WINDOW_AUTOSIZE);
@@ -707,10 +763,10 @@ void usrGameController::combineAndshow(cv::Mat& pt, cv::Mat& main_area) {
 	cvtColor(main_area, dst, CV_GRAY2RGB);
 	dst.copyTo(imgg(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])));
 
-	cv::circle(imgg, Point(buttons[LEFT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(imgg, Point(buttons[LEFT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(imgg, Point(buttons[RIGHT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(imgg, Point(buttons[RIGHT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
+	cv::circle(imgg, buttons[LEFTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(imgg, buttons[RIGHTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(imgg, buttons[DROPB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(imgg, buttons[ROTATEB], 5, Scalar(0), 2, 8, 0);
 	//rectangle(img, Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::rectangle(imgg, Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::namedWindow("ComputerVision", CV_WINDOW_AUTOSIZE);
@@ -738,10 +794,10 @@ void usrGameController::showState(cv::Mat& pt) {
 	cvtColor(state_img, dst, CV_GRAY2RGB);
 	dst.copyTo(img(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])));
 
-	cv::circle(img, Point(buttons[LEFT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[LEFT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[RIGHT], buttons[DOWN]), 5, Scalar(0), 2, 8, 0);
-	cv::circle(img, Point(buttons[RIGHT], buttons[UP]), 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[LEFTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[RIGHTB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[DROPB], 5, Scalar(0), 2, 8, 0);
+	cv::circle(img, buttons[ROTATEB], 5, Scalar(0), 2, 8, 0);
 	//rectangle(img, Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::rectangle(img, Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT]), Scalar(0), 2, 8, 0);
 	cv::namedWindow("State", CV_WINDOW_AUTOSIZE);
