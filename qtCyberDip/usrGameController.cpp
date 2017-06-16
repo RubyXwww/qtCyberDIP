@@ -57,7 +57,9 @@ usrGameController::usrGameController(void* qtCD)
 	jump_flag = false;
 	Op_delay = 1000;
 	currentRecursiveState = NEWGAME;
+	lastState = NEWCYCLE;
 	isGame = false;
+	isInitialed = false;
 
 	blockMap[0x000f] = Tmp(SLIDE, 0);
 	blockMap[0x8888] = Tmp(SLIDE, 1);
@@ -278,7 +280,7 @@ void usrGameController::initialLocation(cv::Mat& img) {
 	next_background[DOWN] = stop_button[1] + round(1.5*block_y);
 	next_background[WIDTH] = next_background[RIGHT] - next_background[LEFT];
 	next_background[HEIGHT] = next_background[DOWN] - next_background[UP];
-
+	isInitialed = true;
 }
 
 vector<double> usrGameController::getFeature(cv::Mat& img) {
@@ -473,6 +475,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		Op_delay = 950;
 		qDebug() << "Initializing...";
 		if(background[WIDTH] == 0) initialLocation(pt);
+		currentState.clear();
 		cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), main_area, CV_RGB2HSV);
 		split(main_area, hsv_model);
 		main_area = hsv_model[2];
@@ -496,6 +499,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case NEXTBLOCK:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -512,6 +516,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case REFRESH:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -522,6 +527,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case FINDLOC:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -541,6 +547,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case JUDGELOC:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -587,6 +594,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case CHECK:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -617,6 +625,7 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 	case DROP:
 		nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 		if (nextType == NONE) {
+			lastState = currentRecursiveState;
 			currentRecursiveState = GAMEOVER;
 			break;
 		}
@@ -638,8 +647,9 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 		break;
 	case GAMEOVER:
 		qDebug() << "Game Over";
+		device->comHitUp();
 		device->comMoveToScale(0, 0);
-		currentState.clear();
+		//currentState.clear();
 		currentRecursiveState = NEWGAME;
 		isGame = false;
 		break;
@@ -648,10 +658,19 @@ int usrGameController::usrProcessImage(cv::Mat& img)
 			qDebug() << "Start New Game";
 			currentRecursiveState = MENU;
 		}
-		else if (next_background[WIDTH] != 0) { //防止广告
+		else if (isInitialed) { //防止广告
 			nextType = getBlockType(pt(Rect(next_background[LEFT], next_background[UP], next_background[WIDTH], next_background[HEIGHT])));
 			if (nextType != NONE) {
+				qDebug() << "Reconnect to Game";
 				isGame = true;
+				cvtColor(pt(Rect(background[LEFT], background[UP], background[WIDTH], background[HEIGHT])), tmp, CV_RGB2HSV);
+				split(tmp, hsv_model);
+				tmp = hsv_model[2];
+				new_grid = readFromImg(tmp);
+				if (accumulate(new_grid[19].begin(), new_grid[19].end(), 0) == 0) {
+					currentRecursiveState = INITIAL;
+				}
+				else currentRecursiveState = lastState;
 			}
 		}
 		lastOp = chrono::steady_clock::now();

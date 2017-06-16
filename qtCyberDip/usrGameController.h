@@ -46,6 +46,7 @@ private:
 		DROPB
 	};
 	RecursiveState currentRecursiveState;
+	RecursiveState lastState;
 	deviceCyberDip* device;
 	vector<double> menuFeature;
 	vector<vector<double>> blockFeatures;
@@ -62,7 +63,7 @@ private:
 	bool isFirstBlock;
 	bool jump_flag;
 	bool isGame;
-	//bool doubleDetection;
+	bool isInitialed;
 	bool waitUp;
 	int delay_count;
 	int fail_count;
